@@ -1,3 +1,4 @@
+#define _CRT_SECURE_NO_WARNINGS
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -5,62 +6,59 @@
 #include "Files.h"
 using namespace std;
 
-int main(int argc, char* argv[]) {
+
+int main() {
 
     setlocale(LC_CTYPE, "ukr");
     SetConsoleCP(1251);
     SetConsoleOutputCP(1251);
 
+    tariff();
 
-   if (argc != 3) {
-       cout << "Введіть параметр FileStream/FilePointer" << endl;
-       return 1;
+    ofstream outFile("phonecalls.bin", ios::app | ios::binary);
+    if (!outFile) {
+            cerr << "Не вдалося відкрити файл!" << endl;
+            return 1;
+        }
+
+    PhoneCall call;
+    bool continueInput = true;
+
+    while (continueInput) {
+        int year{}, month{}, day{}, hour{}, minute{}, second{};
+
+        enterDay(call, outFile);
+        enterStartTime(call, outFile);
+        enterEndTime(call, outFile);
+
+        call.duration = calculateCallDuration(call);
+        call.cost = calculateCallCost(call);
+
+        outFile.write(reinterpret_cast<const char*>(&call), sizeof(call));
+
+        continueInput = continueInputFunc();
     }
 
-   char* mode = argv[2];
-   if (!strcmp(mode, "FileStream")) {
-       cout << "Ви в режимі роботи з потоками" << endl;
-       cout << endl;
+    outFile.close();
 
-       string filename = get_filename();
-       create_file(filename);
-       text_to_file(filename);
-       open_file(filename);
+    ifstream inFile("phonecalls.bin", ios::in | ios::binary);
+    if (!inFile) {
+        cerr << "Не вдалося відкрити файл!" << endl;
+        return 1;
+    }
 
-       int k = enter_k();
+    printHeaderTable();
 
-       encryption(filename, k);
-       choose_line();
-       remove_latin_words();
+    while (inFile.read(reinterpret_cast<char*>(&call), sizeof(PhoneCall))) {
+        printf("|%-11s| %-11s | %-14s | %-15.0f | %-12.2f   |\n", call.date, call.startTime, call.endTime, call.duration, call.cost);
 
-       string name = "clean_latin.txt";
-       open_file(name);
-   }
-   else if (strcmp(mode, "FilePointer") == 0) {
-       cout << "Ви в режимі роботи з вказівниками" << endl;
-       cout << endl;
-       int k = 0;
-       char* filename = new char[1];
-    
-       filename = get_filename1();
+    }
 
-       create_file(filename);
-       text_to_file(filename);
-       open_file(filename);
 
-       k = enter_k();
+    inFile.close();
+    cout << "-------------------------------------------------------------------------------" << endl;
+    cin.ignore();
 
-       encryption(filename, k);
-       choose_line1();
-       remove_latin_words1();
-       char name[] = "clean_latin.txt";
-       open_file(name);
-   }
-   else {
-       cout << "Невідомий параметр! Ви маєте ввести FileStream/FilePointer" << endl;
-       return 1;
-   }
-
-  
+ 
     return 0;
 }
